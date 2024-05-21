@@ -1,0 +1,33 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ReactoChem"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {file = "LICENSE"}
+description = "Simulate chemical reactions in different types of reactors"
+authors = [
+    {name = "Jonathan Ryser", email = "jrjonathanryser@gmail.com"}
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+]
+dynamic = ["version"]
+
+[tool.hatch.version]
+path = "src/reactochem/__init__.py"
+
+[project.urls]
+source = "https://github.com/jonathanrsr/reactochem"
+[tool]

@@ -1,8 +1,8 @@
 from .reactions import Reaction
-from typing import List, Dict, Union, Tuple, Set
+from typing import List, Dict, Union, Tuple, Set, Any
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.integrate import solve_ivp # type: ignore
+from scipy.integrate import solve_ivp  # type: ignore
 
 
 class Reactor():
@@ -269,10 +269,11 @@ class Reactor():
         return np.dot(coeffs_matrix, reaction_rates).reshape(-1)
 
     def run(self, x: float = 0, plot: bool = False,
-            full_output: bool = False
-            ) -> Union[np.ndarray, tuple[np.ndarray, Dict[str, np.ndarray],
-                                         Dict[Reaction, np.ndarray],
-                                         Dict[str, np.ndarray]]]:
+            full_output: bool = False) -> Union[
+                Tuple[np.ndarray, Dict[str, np.ndarray]],
+                Tuple[np.ndarray, Dict[str, np.ndarray],
+                      Dict[str, np.ndarray], Dict[str, np.ndarray],
+                      Dict[str, np.ndarray]]]:
 
         """Run the reaction simulation for a given time period.
 
@@ -340,7 +341,6 @@ class Reactor():
                 concentrations_dict = dict(zip(
                     self.inlet_concentrations_dict.keys(), concentrations
                 ))
-
             coeffs_matrix = self.initialize_coeffs_matrix()
             reaction_rates = self.calc_reaction_rates(concentrations_dict)
             transformation_rates = self.calc_transformation_rates(
@@ -398,15 +398,22 @@ class Reactor():
             t_eval=x_points, max_step=x/100
         )
 
-        x = results.t
-        y = results.y.T
+        x_array = np.array([results.t]).flatten()
+        if (self.reactor_type == "PFR"):
+            y = np.array([results.y.T]).reshape(-1, len(
+                self.inlet_concentrations_dict)
+            )
+        else:
+            y = np.array([results.y.T]).reshape(-1, len(
+                self.initial_bulk_concentrations_dict)
+            )
 
         # Calculate the concentrations at each time or volume
         if (self.reactor_type in ["Batch"]):
             concentrations = y/self.volume
         elif (self.reactor_type in ["Fed-batch", "CSTR"]):
             volume = np.minimum(
-                self.initial_volume + self.flow_rate*x, self.volume
+                self.initial_volume + self.flow_rate*x_array, self.volume
             )
             concentrations = y/volume.reshape(-1, 1)
         elif (self.reactor_type == "PFR"):
@@ -430,10 +437,10 @@ class Reactor():
                 num_species = len(self.inlet_concentrations_dict)
             num_reactions = len(self.reactions)
             coeffs_matrix = self.initialize_coeffs_matrix()
-            reaction_rates = np.zeros([num_reactions, len(x)])
-            transformation_rates = np.zeros([num_species, len(x)])
+            reaction_rates = np.zeros([num_reactions, len(x_array)])
+            transformation_rates = np.zeros([num_species, len(x_array)])
 
-            for i in range(len(x)):
+            for i in range(len(x_array)):
                 concentrations_at_x = {specie: concentrations_dict[specie][i]
                                        for specie in concentrations_dict
                                        }
@@ -473,7 +480,7 @@ class Reactor():
                                (self.reactor_type != "PFR") else "Molar flow",
                                "Reaction rates", "Transformation rates"]
                 ):
-                    ax.plot(x, data, linewidth=1.0)
+                    ax.plot(x_array, data, linewidth=1.0)
                     ax.set_xlabel(
                         "Time" if (self.reactor_type != "PFR") else "Volume"
                     )
@@ -502,12 +509,12 @@ class Reactor():
 
                     if (self.reactor_type in ["Fed-batch", "CSTR"]):
                         volume = np.minimum(
-                            self.initial_volume + self.flow_rate*x, 
+                            self.initial_volume + self.flow_rate*x_array,
                             self.volume
                         )
                         ax_volume = ax.twinx()
                         ax_volume.plot(
-                            x, volume, color="black", linestyle="--",
+                            x_array, volume, color="black", linestyle="--",
                             linewidth=1.0
                         )
                         ax_volume.set_ylabel("Volume")
@@ -517,16 +524,17 @@ class Reactor():
 
         if (full_output):
             return (
-                x, concentrations_dict, y_dict, reaction_rates_dict,
+                x_array, concentrations_dict, y_dict, reaction_rates_dict,
                 transformation_rates_dict
             )
 
-        return x, concentrations_dict
+        return x_array, concentrations_dict
 
     def find_steady_state(
             self, guess: float = 10, threshold: float = 1e-3,
             max_interations: int = 10
-            ) -> tuple[float, Dict[str, float]]:
+            ) -> tuple[float, dict[str, Any], dict[str, Any], dict[str, Any],
+                       dict[str, Any]]:
         """Find the steady state of the reaction system.
 
         Args:
@@ -554,7 +562,7 @@ class Reactor():
             tau = self.volume/self.flow_rate
             x_steady_state = 5*tau
             (
-                x,
+                x_array,
                 concentrations_dict,
                 y_dict,
                 reaction_rates_dict,
@@ -590,7 +598,7 @@ class Reactor():
         while not steady_state_reached and iteration_count < max_interations:
             iteration_count += 1
             (
-                x,
+                x_array,
                 concentrations_dict,
                 y_dict,
                 reaction_rates_dict,
@@ -604,12 +612,19 @@ class Reactor():
             below_threshold = np.all(
                 np.abs(transformation_rates) < threshold, axis=1
             )
-
-            if (np.any(below_threshold)):
+            if self.reactor_type == "CSTR":
+                volume = np.minimum(
+                    self.initial_volume + self.flow_rate*x_array, self.volume
+                )
+                if (np.any(below_threshold)) and volume[-1] == self.volume:
+                    # Find the time at which the steady state is reached
+                    x_steady_state = x_array[np.where(below_threshold)[0][0]]
+                    steady_state_reached = True
+            elif (np.any(below_threshold)):
                 # Find the time at which the steady state is reached
-                x_steady_state = x[np.where(below_threshold)[0][0]]
+                x_steady_state = x_array[np.where(below_threshold)[0][0]]
                 steady_state_reached = True
-            else:
+            if not steady_state_reached:
                 guess *= 10  # Increase time guess
 
         if (not steady_state_reached):
@@ -650,8 +665,11 @@ class Reactor():
 
     def find_conversion(
             self, specie: str, conversion_target: float, guess: float = 10
-        ) -> Tuple[float, Dict[str, float], Dict[str, float],
-                   Dict[Reaction, float], Dict[str, float]]:
+        ) -> Union[np.ndarray, tuple[np.ndarray,
+                                     dict[str, Any],
+                                     dict[str, Any],
+                                     dict[str, Any],
+                                     dict[str, Any]]]:
         """Calculate the time at which a given species reaches a desired
         conversion.
 
@@ -707,7 +725,7 @@ class Reactor():
             )
 
         (
-            x,
+            x_array,
             concentrations_dict,
             y_dict,
             reaction_rates_dict,
@@ -719,7 +737,7 @@ class Reactor():
             concentrations_dict[specie] <= final_concentration_specie
         )[0][0]
 
-        time_conversion_reached = x[index_conversion_reached]
+        time_conversion_reached = x_array[index_conversion_reached]
         concentrations_conversion_reached = {
             specie: concentrations_dict[specie][index_conversion_reached]
         }

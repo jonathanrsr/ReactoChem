@@ -28,6 +28,12 @@ dynamic = ["version"]
 [tool.hatch.version]
 path = "src/reactochem/__init__.py"
 
+[tool.hatch.dependencies]
+numpy = "1.26.0"
+matplotlib = "3.8.4"
+scipy = "1.13.0"
+sympy = "1.12"
+
 [project.urls]
 source = "https://github.com/jonathanrsr/reactochem"
 [tool]

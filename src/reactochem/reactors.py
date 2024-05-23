@@ -62,6 +62,8 @@ class Reactor():
 
         # Check if initial concentrations are provided for all species
         all_species = set()
+        missing_species = set()
+
         for reaction in reactions:
             all_species.update(reaction.species_coeffs.keys())
         
@@ -69,7 +71,7 @@ class Reactor():
             missing_species = (
                 all_species - initial_bulk_concentrations_dict.keys()
             )
-        elif (self.reactor_type == "PFR"):
+        elif (self.reactor_type in ["Fed-batch", "CSTR", "PFR"]):
             missing_species = (
                 all_species - inlet_concentrations_dict.keys()
             )
@@ -97,9 +99,8 @@ class Reactor():
             self.inlet_concentrations_dict = dict(
                 sorted(inlet_concentrations_dict.items())
             )
-
-        # Check that feed concentrations are not negative (only for PFR)
-        else:
+        # Check that feed concentrations are not negative
+        if (self.reactor_type in ["Fed-batch", "CSTR", "PFR"]):
             for species, concentration in inlet_concentrations_dict.items():
                 if concentration < 0:
                     raise ValueError(
@@ -112,8 +113,10 @@ class Reactor():
 
         # Check required parameters based on reactor type
         required_parameters = {
-            "Fed-batch": ["inlet_concentrations_dict"],
-            "CSTR": [ "inlet_concentrations_dict"],
+            "Fed-batch": ["inlet_concentrations_dict", "initial_volume", 
+                          "flow_rate"],
+            "CSTR": [ "inlet_concentrations_dict", "initial_volume",
+                     "flow_rate"],
             "PFR": ["flow_rate", "inlet_concentrations_dict"]
         }
         if (reactor_type in required_parameters):
@@ -123,10 +126,17 @@ class Reactor():
                         f"""{parameter.replace("_", " ").capitalize()} must be 
                         specified for {reactor_type} reactor."""
                     )
-        
-        if (self.reactor_type == "PFR" and flow_rate == 0):
+                
+        if (self.reactor_type != "Batch" and flow_rate <= 0):
             raise ValueError(
-                """Flow rate must be greater than 0 for PFR reactors."""
+                """Flow rate must be greater than 0."""
+            )
+        
+        if (self.reactor_type != "PFR" and (initial_volume > self.volume or 
+                                            initial_volume < 0)):
+            raise ValueError(
+                """Initial volume must be greater than 0 and less than 
+                or equal to the reactor volume."""
             )
 
         self.initial_volume = initial_volume
@@ -169,18 +179,30 @@ class Reactor():
             each species in each reaction
         
         """
-        num_species = len(self.initial_bulk_concentrations_dict)
+        if (self.reactor_type in ["Batch", "Fed-batch, CSTR"]):
+            num_species = len(self.initial_bulk_concentrations_dict)
+        else:
+            num_species = len(self.inlet_concentrations_dict)
         num_reactions = len(self.reactions)
         coeffs_matrix = np.zeros([num_species, num_reactions])
 
         for i, reaction in enumerate(self.reactions):
-            for j, specie in enumerate(
-                self.initial_bulk_concentrations_dict.keys()
-            ):
-                if (specie in reaction.species_coeffs):
-                    coeffs_matrix[j, i] = (
-                        reaction.species_coeffs[specie]
-                    )
+            if self.reactor_type in ["Batch", "Fed-batch", "CSTR"]:
+                for j, specie in enumerate(
+                    self.initial_bulk_concentrations_dict.keys()
+                ):
+                    if (specie in reaction.species_coeffs):
+                        coeffs_matrix[j, i] = (
+                            reaction.species_coeffs[specie]
+                        )
+            else:
+                for j, specie in enumerate(
+                    self.inlet_concentrations_dict.keys()
+                ):
+                    if (specie in reaction.species_coeffs):
+                        coeffs_matrix[j, i] = (
+                            reaction.species_coeffs[specie]
+                        )
 
         return coeffs_matrix
     
@@ -306,9 +328,15 @@ class Reactor():
 
             """
             concentrations = self.calculate_concentration(x, y)
-            concentrations_dict = dict(zip(
-                self.initial_bulk_concentrations_dict.keys(), concentrations
-            ))
+
+            if (self.reactor_type in ["Batch", "Fed-batch", "CSTR"]):
+                concentrations_dict = dict(zip(
+                    self.initial_bulk_concentrations_dict.keys(), concentrations
+                ))
+            else:
+                concentrations_dict = dict(zip(
+                    self.inlet_concentrations_dict.keys(), concentrations
+                ))
 
             coeffs_matrix = self.initialize_coeffs_matrix()
             reaction_rates = self.calculate_reaction_rates(concentrations_dict)
@@ -381,13 +409,22 @@ class Reactor():
         elif (self.reactor_type == "PFR"):
             concentrations = y/self.flow_rate
 
-        concentrations_dict = {
-            specie: concentrations[:, i] for i, specie 
-            in enumerate(self.initial_bulk_concentrations_dict.keys())
-        }
+        if (self.reactor_type in ["Batch", "Fed-batch", "CSTR"]):
+            concentrations_dict = {
+                specie: concentrations[:, i] for i, specie 
+                in enumerate(self.initial_bulk_concentrations_dict.keys())
+            }
+        else:
+            concentrations_dict = {
+                specie: concentrations[:, i] for i, specie 
+                in enumerate(self.inlet_concentrations_dict.keys())
+            }
 
         if full_output or plot:
-            num_species = len(self.initial_bulk_concentrations_dict)
+            if (self.reactor_type in ["Batch", "Fed-batch", "CSTR"]):
+                num_species = len(self.initial_bulk_concentrations_dict)
+            else:
+                num_species = len(self.inlet_concentrations_dict)
             num_reactions = len(self.reactions)
             coeffs_matrix = self.initialize_coeffs_matrix()
             reaction_rates = np.zeros([num_reactions, len(x)])
@@ -403,17 +440,25 @@ class Reactor():
                 transformation_rates[:, i] = self.calculate_transformation_rates(
                     coeffs_matrix, reaction_rates[:, i]
                 )
-            
-            y_dict = {specie: y[:, i] for i, specie in enumerate(
-                self.initial_bulk_concentrations_dict.keys()
-            )}
+            if (self.reactor_type in ["Batch", "Fed-batch", "CSTR"]):
+                y_dict = {specie: y[:, i] for i, specie in enumerate(
+                    self.initial_bulk_concentrations_dict.keys()
+                )}
+                transformation_rates_dict = {specie: transformation_rates[i] for
+                    i, specie in enumerate(
+                        self.initial_bulk_concentrations_dict.keys()
+                )}
+            else:
+                y_dict = {specie: y[:, i] for i, specie in enumerate(
+                    self.inlet_concentrations_dict.keys()
+                )}
+                transformation_rates_dict = {specie: transformation_rates[i] for
+                    i, specie in enumerate(
+                        self.inlet_concentrations_dict.keys()
+                    )
+                }
             reaction_rates_dict = {reaction.name: reaction_rates[i] for 
                 i, reaction in enumerate(self.reactions)
-            }
-            transformation_rates_dict = {specie: transformation_rates[i] for
-                i, specie in enumerate(
-                    self.initial_bulk_concentrations_dict.keys()
-                )
             }
 
             if (plot):
@@ -431,13 +476,22 @@ class Reactor():
                         "Time" if (self.reactor_type != "PFR") else "Volume"
                     )
                     ax.set_ylabel(ylabel)
-                    ax.legend(
-                        list(self.initial_bulk_concentrations_dict.keys() if (
-                            ylabel != "Reaction rates") else [
-                                reaction.name for reaction in self.reactions
-                            ]
+                    if self.reactor_type in ["Batch", "Fed-batch", "CSTR"]:
+                        ax.legend(
+                            list(self.initial_bulk_concentrations_dict.keys() if (
+                                ylabel != "Reaction rates") else [
+                                    reaction.name for reaction in self.reactions
+                                ]
+                            )
                         )
-                    )
+                    else:
+                        ax.legend(
+                            list(self.inlet_concentrations_dict.keys() if (
+                                ylabel != "Reaction rates") else [
+                                    reaction.name for reaction in self.reactions
+                                ]
+                            )
+                        )
 
                     if (ylabel != "Transformation rates"):
                         ax.set_ylim(0)
@@ -490,6 +544,39 @@ class Reactor():
             at the steady state
 
         """
+        if self.reactor_type == "CSTR":
+            tau = self.volume/self.flow_rate
+            x_steady_state = 5*tau
+            (
+                x,
+                concentrations_dict,
+                y_dict,
+                reaction_rates_dict,
+                transformation_rates_dict
+            ) = self.run(x_steady_state, full_output = True)
+
+            steady_state_concentrations_dict = {
+                specie: concentrations_dict[specie][-1] for 
+                specie in concentrations_dict
+            }
+            steady_state_y_dict = {
+                specie: y_dict[specie][-1] for specie in y_dict
+            }
+            steady_state_reaction_rates_dict = {
+                reaction: reaction_rates_dict[reaction][-1] for 
+                reaction in reaction_rates_dict
+            }
+            steady_state_transformation_rates_dict = {
+                specie: transformation_rates_dict[specie][-1] for 
+                specie in transformation_rates_dict
+            }
+            
+            return (
+                x_steady_state, steady_state_concentrations_dict,
+                steady_state_y_dict, steady_state_reaction_rates_dict,
+                steady_state_transformation_rates_dict
+            )
+
         steady_state_reached = False
         iteration_count = 0
 
@@ -526,10 +613,9 @@ class Reactor():
             )
     
         steady_state_concentrations_dict = {
-            specie: concentrations_dict[specie][np.where(
-                below_threshold
-            )[0][0]] 
-            for specie in concentrations_dict
+            specie: concentrations_dict[specie][
+                np.where(below_threshold)[0][0]
+            ] for specie in concentrations_dict
         }
         steady_state_y_dict = {
             specie: y_dict[specie][np.where(
@@ -580,9 +666,14 @@ class Reactor():
             the transformation rates at the desired conversion
 
         """ 
-        initial_concentration_specie = (
-            self.initial_bulk_concentrations_dict[specie]
-        )
+        if self.reactor_type in ["Batch", "Fed-batch", "CSTR"]:
+            initial_concentration_specie = (
+                self.initial_bulk_concentrations_dict[specie]
+            )
+        else:
+            initial_concentration_specie = (
+                self.inlet_concentrations_dict[specie]
+            )
 
         final_concentration_specie = (
             initial_concentration_specie*(1 - conversion_target)

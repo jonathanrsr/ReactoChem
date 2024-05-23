@@ -8,8 +8,14 @@ readme = "README.md"
 requires-python = ">=3.10"
 license = {file = "LICENSE"}
 description = "Simulate chemical reactions in different types of reactors"
+dependencies = [
+    "numpy=1.26.4",
+    "matplotlib=3.8.4",
+    "scipy=1.13.0",
+    "sympy=1.12"
+]
 authors = [
-    {name = "Jonathan Ryser", email = "jrjonathanryser@gmail.com"}
+    {name = "Jonathan Ryser - Arsène Tergalinsky", email = "jrjonathanryser@gmail.com - arsene.sauterel@epfl.ch"}
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -24,21 +30,19 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
 ]
 dynamic = ["version"]
-dependencies = [
-    "numpy",
-    "matplotlib",
-    "scipy",
-    "sympy"
-]
+
+[project.urls]
+source = "https://github.com/jonathanrsr/ReactoChem"
 
 [project.optional-dependencies]
 test = [
-    "pytest"
+    "pytest=7.4.0"
 ]
 
 [tool.hatch.version]
 path = "src/reactochem/__init__.py"
 
-[project.urls]
-source = "https://github.com/jonathanrsr/reactochem"
-[tool]
+[tool.pytest.ini_options]
+testpaths = [
+    "tests",
+]

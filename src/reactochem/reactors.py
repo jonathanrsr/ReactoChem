@@ -1,8 +1,8 @@
 from .reactions import Reaction
-from typing import List, Dict, Union, Tuple
+from typing import List, Dict, Union, Tuple, Set
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.integrate import solve_ivp
+from scipy.integrate import solve_ivp # type: ignore
 
 
 class Reactor():
@@ -28,16 +28,16 @@ class Reactor():
                 reactor.
             initial_bulk_concentrations_dict: Dict[str, float]: The
                 initial concentrations of the species in the reactor,
-                default is None, but must be specified for batch,
+                default is {}, but must be specified for batch,
                 fed-batch, and CSTR reactors.
             initial_volume (float): The initial volume of the reactor,
-                default is None, but must be specified for fed-batch and
+                default is 0, but must be specified for fed-batch and
                 CSTR reactors.
             flow_rate (float): The flow rate of the reactor, default
-                is None but must be specified for fed-batch, CSTR and
+                is {} but must be specified for fed-batch, CSTR and
                 PFR reactors.
             inlet_concentrations_dict (Dict[str, float]): The inlet
-                concentrations of the reaction, default is None but must
+                concentrations of the reaction, default is {} but must
                 be specified for fed-batch, CSTR, and PFR reactors.
 
         Raises:
@@ -62,8 +62,8 @@ class Reactor():
         self.reactions = reactions
 
         # Check if initial concentrations are provided for all species
-        all_species = set()
-        missing_species = set()
+        all_species: Set[str] = set()
+        missing_species: Set[str] = set()
 
         for reaction in reactions:
             all_species.update(reaction.species_coeffs.keys())
@@ -144,7 +144,7 @@ class Reactor():
         self.flow_rate = flow_rate
         self.inlet_concentrations_dict = dict(
             sorted(inlet_concentrations_dict.items())
-        ) if (inlet_concentrations_dict) else None
+        ) if (inlet_concentrations_dict) else {}
 
     def __str__(self) -> str:
         """Returns a string representation of the Reactor object.
@@ -268,7 +268,7 @@ class Reactor():
         """
         return np.dot(coeffs_matrix, reaction_rates).reshape(-1)
 
-    def run(self, x: float = None, plot: bool = False,
+    def run(self, x: float = 0, plot: bool = False,
             full_output: bool = False
             ) -> Union[np.ndarray, tuple[np.ndarray, Dict[str, np.ndarray],
                                          Dict[Reaction, np.ndarray],
@@ -279,10 +279,10 @@ class Reactor():
         Args:
             time (float): The time period for which the simulation
                 should run for batch, fed-batch and CSTR reactors,
-                default is None but must be specified for batch,
+                default is 0 but must be specified for batch,
                 fed-batch and CSTR reactors
 
-                If None is provided for a PFR, the simulation will run until
+                If 0 is provided for a PFR, the simulation will run until
                 the volume of the reactor is reached
             plot (bool): Whether to plot the concentration, number of
                 moles or molar flow, reaction rates and transformation
@@ -307,7 +307,7 @@ class Reactor():
 
         """
         if (self.reactor_type in ["Batch", "Fed-batch", "CSTR"]):
-            if (x is None):
+            if (x <= 0):
                 raise ValueError(
                     """Time must be specified for batch, fed-batch, and
                     CSTR reactors."""
@@ -502,7 +502,8 @@ class Reactor():
 
                     if (self.reactor_type in ["Fed-batch", "CSTR"]):
                         volume = np.minimum(
-                            self.initial_volume + self.flow_rate*x, self.volume
+                            self.initial_volume + self.flow_rate*x, 
+                            self.volume
                         )
                         ax_volume = ax.twinx()
                         ax_volume.plot(

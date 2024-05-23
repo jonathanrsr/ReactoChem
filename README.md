@@ -1,6 +1,6 @@
-# ReactoChem
+# ReactoChem Package
 
-This package provides functionality to define chemical reactions and calculate their rates based on given concentrations of species.
+This package provides functionality to define chemical reactions and calculate their rates based on given concentrations of species. It also includes a `Reactor` class for simulating chemical reactors and analyzing reaction behavior.
 
 ## Installation
 
@@ -10,18 +10,15 @@ You can install the package using pip:
 pip install reactochem
 ```
 
-or directly from the GitHub repository:
-
-```
-pip install git+https://github.com/jonathanrsr/ReactoChem
-```
+or directly from the GitHub repo:
 
 ## Usage
 
-### Importing the Reaction Class
+### Importing the Classes
 
 ```python
-from reactochem.reactions import Reaction
+from reaction_package.reactions import Reaction
+from reaction_package.reactor import Reactor
 ```
 
 ### Creating a Reaction Object
@@ -42,25 +39,48 @@ reaction = Reaction(
 )
 ```
 
-### String Representation of Reaction
+### Creating a Reactor Object
 
-You can get a string representation of the Reaction object using the `__str__` method:
+To create a Reactor object, you need to provide the following parameters:
+
+- `reactor_type`: The type of reactor (Batch, Fed-batch, CSTR, PFR).
+- `volume`: Volume of the reactor.
+- `reactions`: Reactions taking place in the reactor.
+- Additional parameters based on the reactor type (e.g., `initial_bulk_concentrations_dict` for Batch reactors).
 
 ```python
-print(reaction)
-# Output: Species: {'A': 1, 'B': 2, 'C': 1}
-#         Rate law: k*A*B**2
+reactor = Reactor(
+    reactor_type="Batch",
+    volume=100, 
+    reactions=[reaction], 
+    initial_bulk_concentrations_dict={"A": 1.0, "B": 2.0, "C": 0.5}
+)
 ```
 
-### Calculating Reaction Rate
+### Running a Simulation
 
-To calculate the reaction rate based on given concentrations of species, use the `calculate_rate` method:
+You can run a simulation of the reactor using the `run` method, specifying the time or volume for the simulation and whether to plot the results.
 
 ```python
-concentrations = {'A': 0.5, 'B': 1.0}
-rate = reaction.calculate_rate(concentrations)
-print(rate)
-# Output: Calculated reaction rate
+time, concentrations = reactor.run(10, plot=True)
+```
+
+### Finding Steady State
+
+You can find the steady state of the reactor using the `find_steady_state` method.
+
+```python
+steady_state_time, steady_state_concentrations = reactor.find_steady_state()
+```
+
+### Finding Conversion
+
+You can find the time at which a given species reaches a desired conversion using the `find_conversion` method.
+
+```python
+conversion_time, conversion_concentrations = reactor.find_conversion("A", 0.8)
 ```
 
 ---
+
+Feel free to modify and expand this README file according to your package's specific features and functionalities!

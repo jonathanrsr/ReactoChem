@@ -45,7 +45,8 @@ def test_str() -> None:
         "Reaction 1", ["A", "B", "C"], [-1, -1, 1], "0.2*A**2*B"
     )
     assert str(reaction) == (
-        "Species: {'A': -1, 'B': -1, 'C': 1}\n"
+        "Name: Reaction 1, "
+        "Species: {'A': -1, 'B': -1, 'C': 1}, "
         "Rate law: 0.2*A**2*B"
     )
 

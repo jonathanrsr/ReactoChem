@@ -52,7 +52,8 @@ class Reaction:
             str: A string representation of the Reaction object.
 
         """
-        return f"Species: {self.species_coeffs}\nRate law: {self.rate_law}"
+        return (f"Name: {self.name}, Species: {self.species_coeffs}, "
+                f"Rate law: {self.rate_law}")
 
     def calculate_rate(self, concentrations: Dict[str, float]) -> float:
         """

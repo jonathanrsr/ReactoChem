@@ -114,10 +114,8 @@ class Reactor():
 
         # Check required parameters based on reactor type
         required_parameters = {
-            "Fed-batch": ["inlet_concentrations_dict", "initial_volume",
-                          "flow_rate"],
-            "CSTR": ["inlet_concentrations_dict", "initial_volume",
-                     "flow_rate"],
+            "Fed-batch": ["inlet_concentrations_dict", "flow_rate"],
+            "CSTR": ["inlet_concentrations_dict", "flow_rate"],
             "PFR": ["flow_rate", "inlet_concentrations_dict"]
         }
         if (reactor_type in required_parameters):
@@ -159,16 +157,32 @@ class Reactor():
         reactions_str = "\n".join([f"{i + 1}. {reaction}" for i, reaction
                                    in enumerate(self.reactions)])
 
-        return (
-            f"Volume: {self.volume}\n"
-            f"Reactions: {reactions_str}\n"
-            f"""Initial bulk concentrations: {
-                self.initial_bulk_concentrations_dict
-            }\n"""
-            f"Initial volume: {self.initial_volume}\n"
-            f"Flow rate: {self.flow_rate}\n"
-            f"Inlet concentrations: {self.inlet_concentrations_dict}"
-        )
+        if self.reactor_type == "Batch":
+            return (
+                f"Volume: {self.volume}\n"
+                f"Reactions: {reactions_str}\n"
+                f"""Initial bulk concentrations: {
+                    self.initial_bulk_concentrations_dict}"""
+            )
+        elif self.reactor_type == "PFR":
+            return (
+                f"Volume: {self.volume}\n"
+                f"Reactions: {reactions_str}\n"
+                f"Initial volume: {self.initial_volume}\n"
+                f"Flow rate: {self.flow_rate}\n"
+                f"Inlet concentrations: {self.inlet_concentrations_dict}"
+            )
+        else:
+            return (
+                f"Volume: {self.volume}\n"
+                f"Reactions: {reactions_str}\n"
+                f"""Initial bulk concentrations: {
+                    self.initial_bulk_concentrations_dict
+                }\n"""
+                f"Initial volume: {self.initial_volume}\n"
+                f"Flow rate: {self.flow_rate}\n"
+                f"Inlet concentrations: {self.inlet_concentrations_dict}"
+            )
 
     def initialize_coeffs_matrix(self):
         """Initialize a matrix of stoichiometric coefficients for each
@@ -207,7 +221,7 @@ class Reactor():
 
         return coeffs_matrix
 
-    def calculate_concentration(self, x, y):
+    def calculate_concentration(self, x, y) -> np.ndarray:
         """Calculate the concentration of each species at a given time
         or volume.
 
@@ -228,7 +242,10 @@ class Reactor():
             volume = min(
                 self.initial_volume + self.flow_rate*x, self.volume
             )
-            concentrations = y/volume
+            if volume == 0:
+                concentrations = y*0
+            else:
+                concentrations = y/volume
         elif (self.reactor_type == "PFR"):
             concentrations = y/self.flow_rate
 
@@ -252,7 +269,8 @@ class Reactor():
             for reaction in self.reactions
         ]).reshape(-1, 1)
 
-    def calc_transformation_rates(self, coeffs_matrix, reaction_rates):
+    def calc_transformation_rates(self, coeffs_matrix, reaction_rates
+                                  ) -> np.ndarray:
         """Calculate the transformation rates of each species based on
         the stoichiometric coefficients and reaction rates.
 
@@ -299,8 +317,7 @@ class Reactor():
                 and CSTR reactors
 
         Returns:
-            Tuple[np.ndarray, Dict[str, np.ndarray], Dict[str, np.ndarray],
-            Dict[Reaction, np.ndarray], Dict[str, np.ndarray]]:
+            Tuple[np.ndarray, Dict[str, np.ndarray], Dict[str, np.ndarray], Dict[Reaction, np.ndarray], Dict[str, np.ndarray]]:
             In order : the time, the concentrations, the number of moles
             or molar flow, the reaction rates and the transformation
             rates at each time or volume if full_output is True, else
@@ -415,10 +432,14 @@ class Reactor():
             volume = np.minimum(
                 self.initial_volume + self.flow_rate*x_array, self.volume
             )
-            concentrations = y/volume.reshape(-1, 1)
+            concentrations = np.zeros_like(y)
+            if volume[0] == 0:
+                concentrations[0, :] = np.nan
+                concentrations[1:, :] = y[1:, :]/volume[1:].reshape(-1, 1)
+            else:
+                concentrations = y/volume.reshape(-1, 1)
         elif (self.reactor_type == "PFR"):
             concentrations = y/self.flow_rate
-
         if (self.reactor_type in ["Batch", "Fed-batch", "CSTR"]):
             concentrations_dict = {
                 specie: concentrations[:, i] for i, specie
@@ -485,6 +506,7 @@ class Reactor():
                         "Time" if (self.reactor_type != "PFR") else "Volume"
                     )
                     ax.set_ylabel(ylabel)
+                    ax.set_xlim(0, x_array[-1])
                     if self.reactor_type in ["Batch", "Fed-batch", "CSTR"]:
                         ax.legend(
                             list(self.initial_bulk_concentrations_dict.keys()
@@ -506,6 +528,8 @@ class Reactor():
 
                     if (ylabel != "Transformation rates"):
                         ax.set_ylim(0)
+                    else:
+                        ax.axhline(0, color='black', linewidth=0.75)
 
                     if (self.reactor_type in ["Fed-batch", "CSTR"]):
                         volume = np.minimum(
@@ -518,6 +542,7 @@ class Reactor():
                             linewidth=1.0
                         )
                         ax_volume.set_ylabel("Volume")
+                        ax_volume.set_ylim(0)
 
                 plt.tight_layout()
                 plt.show()
@@ -532,7 +557,7 @@ class Reactor():
 
     def find_steady_state(
             self, guess: float = 10, threshold: float = 1e-3,
-            max_interations: int = 10
+            max_iterations: int = 10
             ) -> tuple[float, dict[str, Any], dict[str, Any], dict[str, Any],
                        dict[str, Any]]:
         """Find the steady state of the reaction system.
@@ -543,16 +568,15 @@ class Reactor():
             threshold (float): The threshold value for determining
                 steady state (the maximal rate of change of concentration
                 over time), default is 1e-3
-            max_interations (int): The maximum number of iterations to
+            max_iterations (int): The maximum number of iterations to
                 find the steady state, default is 10
 
         Raises:
             ValueError: If the steady state is not reached within the
-            maximum number of iterations
+                maximum number of iterations
 
         Returns:
-            Tuple[float, Dict[str, float], Dict[str, float],
-            Dict[Reaction, float], Dict[str, float]]:
+            Tuple[float, Dict[str, float], Dict[str, float], Dict[Reaction, float], Dict[str, float]]:
             In order : the time, the concentrations, the number of moles
             or molar flow, the reaction rates and the transformation rates
             at the steady state
@@ -560,7 +584,7 @@ class Reactor():
         """
         if self.reactor_type == "CSTR":
             tau = self.volume/self.flow_rate
-            x_steady_state = 5*tau
+            x_steady_state = 3*tau
             (
                 x_array,
                 concentrations_dict,
@@ -595,7 +619,7 @@ class Reactor():
         iteration_count = 0
 
         # Run a simulation to find the steady state
-        while not steady_state_reached and iteration_count < max_interations:
+        while not steady_state_reached and iteration_count < max_iterations:
             iteration_count += 1
             (
                 x_array,
@@ -684,8 +708,7 @@ class Reactor():
                 conversion at steady state
 
         Returns:
-            Tuple[float, Dict[str, float], Dict[str, float],
-            Dict[Reaction, float], Dict[str, float]]:
+            Tuple[float, Dict[str, float], Dict[str, float], Dict[Reaction, float], Dict[str, float]]:
             In order : the time, the concentrations,
             the number of moles or molar flow, the reaction rates and
             the transformation rates at the desired conversion

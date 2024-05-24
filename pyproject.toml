@@ -37,7 +37,11 @@ source = "https://github.com/jonathanrsr/ReactoChem"
 
 [project.optional-dependencies]
 test = [
-    "pytest==7.4.0"
+    "pytest==7.4.0",
+    "mypy==1.8.0",
+    "flake8==7.0.0",
+    "sphinx==5.0.2",
+    "sphinx_rtd_theme=1.2.0"
 ]
 
 [tool.hatch.version]
@@ -45,5 +49,5 @@ path = "src/reactochem/__init__.py"
 
 [tool.pytest.ini_options]
 testpaths = [
-    "tests",
+    "tests"
 ]

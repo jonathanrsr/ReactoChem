@@ -172,7 +172,7 @@ def test_find_steady_state():
 
     assert time_steady_state_batch == pytest.approx(44.744, abs=1e-3)
     assert time_steady_state_fedbatch == pytest.approx(116.116, abs=1e-3)
-    assert time_steady_state_cstr == pytest.approx(500)
+    assert time_steady_state_cstr == pytest.approx(300)
     assert time_steady_state_pfr == pytest.approx(44.744, abs=1e-3)
 
 
@@ -196,5 +196,5 @@ def test_find_conversion():
 
     assert time_conversion_batch == pytest.approx(18.498, abs=1e-3)
     assert time_conversion_fedbatch == pytest.approx(56.256, abs=1e-3)
-    assert time_conversion_cstr == pytest.approx(56.556, abs=1e-3)
+    assert time_conversion_cstr == pytest.approx(56.456, abs=1e-3)
     assert time_conversion_pfr == pytest.approx(18.498, abs=1e-3)

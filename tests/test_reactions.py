@@ -35,7 +35,7 @@ def test_same_specie() -> None:
     species in the species list"""
     with pytest.raises(ValueError):
         Reaction(
-            "Reaction 1", ["A", "A", "C"], [-1, -1, 1], "0.2*A**2*B"
+            "Reaction 1", ["A", "A", "B"], [-1, -1, 1], "0.2*A**2*B"
         )
 
 

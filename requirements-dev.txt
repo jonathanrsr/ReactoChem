@@ -16,3 +16,9 @@ python-dateutil==2.9.0.post0
 scipy==1.13.1
 six==1.16.0
 sympy==1.12
+sphinx==5.0.2
+sphinx_rtd_theme==1.2.0
+mypy==1.8.0
+flake8==7.0.0
+tox==4.15.0
+pytest-cov==4.1.0

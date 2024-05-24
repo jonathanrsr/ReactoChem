@@ -5,11 +5,18 @@ build-backend = "hatchling.build"
 [project]
 name = "ReactoChem"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 license = {file = "LICENSE"}
 description = "Simulate chemical reactions in different types of reactors"
+dependencies = [
+    "numpy==1.26.4",
+    "matplotlib==3.8.4",
+    "scipy==1.13.0",
+    "sympy==1.12"
+]
 authors = [
-    {name = "Jonathan Ryser", email = "jrjonathanryser@gmail.com"}
+    {name = "Jonathan Ryser", email = "jrjonathanryser@gmail.com"},
+    {name = "Arsène Tergalinsky", email = "arsene.sauterel@epfl.ch"}
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -25,15 +32,22 @@ classifiers = [
 ]
 dynamic = ["version"]
 
+[project.urls]
+source = "https://github.com/jonathanrsr/ReactoChem"
+
+[project.optional-dependencies]
+test = [
+    "pytest==7.4.0",
+    "mypy==1.8.0",
+    "flake8==7.0.0",
+    "sphinx==5.0.2",
+    "sphinx_rtd_theme=1.2.0"
+]
+
 [tool.hatch.version]
 path = "src/reactochem/__init__.py"
 
-[tool.hatch.dependencies]
-numpy = "1.26.0"
-matplotlib = "3.8.4"
-scipy = "1.13.0"
-sympy = "1.12"
-
-[project.urls]
-source = "https://github.com/jonathanrsr/reactochem"
-[tool]
+[tool.pytest.ini_options]
+testpaths = [
+    "tests"
+]

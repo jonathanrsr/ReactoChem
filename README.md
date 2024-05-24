@@ -1,24 +1,28 @@
 # ReactoChem Package
 
-This package provides functionality to define chemical reactions and calculate their rates based on given concentrations of species. It also includes a `Reactor` class for simulating chemical reactors and analyzing reaction behavior.
+This package provides functionality to define chemical reactions via a `Reaction` class and calculate their rates based on given concentrations of species. This reactions can the be used with the `Reactor` class to simulate their evolution inside different types of reactor (for now only batch, fed-batch, CSTR and PFR reactors are available).
 
 ## Installation
 
-You can install the package using pip:
+You can install the package using pip inside the source directory (which contains the pyproject.toml file):
 
 ```
-pip install reactochem
+pip install .
 ```
 
 or directly from the GitHub repo:
+
+```
+pip install git+https://github.com/jonathanrsr/ReactoChem
+```
 
 ## Usage
 
 ### Importing the Classes
 
 ```python
-from reaction_package.reactions import Reaction
-from reaction_package.reactor import Reactor
+from reactochem.reactions import Reaction
+from reactochem.reactor import Reactor
 ```
 
 ### Creating a Reaction Object
@@ -31,8 +35,8 @@ To create a Reaction object, you need to provide the following parameters:
 - `rate_law`: The rate law expression for the reaction.
 
 ```python
-reaction = Reaction(
-    name="Reaction1",
+reaction1 = Reaction(
+    name="Reaction 1",
     species=["A", "B", "C"],
     coeffs=[1, 2, 1],
     rate_law="k * A * B**2"
@@ -46,20 +50,26 @@ To create a Reactor object, you need to provide the following parameters:
 - `reactor_type`: The type of reactor (Batch, Fed-batch, CSTR, PFR).
 - `volume`: Volume of the reactor.
 - `reactions`: Reactions taking place in the reactor.
-- Additional parameters based on the reactor type (e.g., `initial_bulk_concentrations_dict` for Batch reactors).
+- `initial_bulk_concentrations`: The initial concentrations of the species inside the reactor (Batch, Fed-batch, CSTR).
+- `initial_volume`: The initial volume (Fed-batch, CSTR).
+- `flow_rate`: The flow rate of the feed (Fed-batch, CSTR, PFR).
+- `inlet_concentrations`: The concentrations of the species in the inlet (Fed-batch, CSTR, PFR).
 
 ```python
-reactor = Reactor(
-    reactor_type="Batch",
+cstr_exemple = Reactor(
+    reactor_type="CSTR",
     volume=100, 
     reactions=[reaction], 
-    initial_bulk_concentrations_dict={"A": 1.0, "B": 2.0, "C": 0.5}
+    initial_bulk_concentrations_dict={"A": 1.0, "B": 2.0, "C": 0.5},
+    initial_volume=0,
+    flow_rate=5,
+    inlet_concentrations_dict={"A": 1.0, "B": 1.0, "C": 0}
 )
 ```
 
 ### Running a Simulation
 
-You can run a simulation of the reactor using the `run` method, specifying the time or volume for the simulation and whether to plot the results.
+You can run a simulation of the reactor using the `run` method, specifying the time (Batch, Fed-batch or CSTR) or volume (PFR) for the simulation and whether to plot the results.
 
 ```python
 time, concentrations = reactor.run(10, plot=True)
@@ -82,5 +92,3 @@ conversion_time, conversion_concentrations = reactor.find_conversion("A", 0.8)
 ```
 
 ---
-
-Feel free to modify and expand this README file according to your package's specific features and functionalities!

@@ -63,23 +63,36 @@ class Reactor():
 
         # Check if initial concentrations are provided for all species
         all_species: Set[str] = set()
-        missing_species: Set[str] = set()
+        missing_species_bulk: Set[str] = set()
+        missing_species_inlet: Set[str] = set()
 
         for reaction in reactions:
             all_species.update(reaction.species_coeffs.keys())
 
-        if (self.reactor_type in ["Batch", "Fed-batch", "CSTR"]):
-            missing_species = (
+        if (self.reactor_type == "Batch"):
+            missing_species_bulk = (
                 all_species - initial_bulk_concentrations_dict.keys()
             )
-        elif (self.reactor_type in ["Fed-batch", "CSTR", "PFR"]):
-            missing_species = (
+        elif (self.reactor_type in ["Fed-batch", "CSTR"]):
+            missing_species_bulk = (
+                all_species - initial_bulk_concentrations_dict.keys()
+            )
+            missing_species_inlet = (
                 all_species - inlet_concentrations_dict.keys()
             )
-        if (missing_species):
+        else:
+            missing_species_inlet = (
+                all_species - inlet_concentrations_dict.keys()
+            )
+        if (missing_species_bulk):
             raise ValueError(
                 f"""Missing initial concentrations for species:
-                {missing_species}"""
+                {missing_species_bulk} in the bulk"""
+            )
+        if (missing_species_inlet):
+            raise ValueError(
+                f"""Missing inlet concentrations for species:
+                {missing_species_inlet}"""
             )
 
         # Check that initial concentrations are not negative
@@ -168,7 +181,6 @@ class Reactor():
             return (
                 f"Volume: {self.volume}\n"
                 f"Reactions: {reactions_str}\n"
-                f"Initial volume: {self.initial_volume}\n"
                 f"Flow rate: {self.flow_rate}\n"
                 f"Inlet concentrations: {self.inlet_concentrations_dict}"
             )
@@ -317,7 +329,7 @@ class Reactor():
                 and CSTR reactors
 
         Returns:
-            Tuple[np.ndarray, Dict[str, np.ndarray], Dict[str, np.ndarray], Dict[Reaction, np.ndarray], Dict[str, np.ndarray]]:
+            Tuple[np.ndarray, Dict[str, np.ndarray], Dict[str, np.ndarray], Dict[Reaction, np.ndarray], Dict[str, np.ndarray]]: # noqa
             In order : the time, the concentrations, the number of moles
             or molar flow, the reaction rates and the transformation
             rates at each time or volume if full_output is True, else
@@ -492,7 +504,7 @@ class Reactor():
                                    i, reaction in enumerate(self.reactions)
                                    }
 
-            if (plot):
+            if plot:  # pragma: no cover
                 fig, axs = plt.subplots(2, 2, figsize=(10, 8))
                 for ax, data, ylabel in zip(
                     axs.flat, [concentrations, y, reaction_rates.T,
@@ -576,7 +588,7 @@ class Reactor():
                 maximum number of iterations
 
         Returns:
-            Tuple[float, Dict[str, float], Dict[str, float], Dict[Reaction, float], Dict[str, float]]:
+            Tuple[float, Dict[str, float], Dict[str, float], Dict[Reaction, float], Dict[str, float]]: # noqa
             In order : the time, the concentrations, the number of moles
             or molar flow, the reaction rates and the transformation rates
             at the steady state
@@ -591,7 +603,7 @@ class Reactor():
                 y_dict,
                 reaction_rates_dict,
                 transformation_rates_dict
-            ) = self.run(x_steady_state, full_output=True)
+            ) = self.run(x_steady_state, full_output=True)  # type: ignore
 
             steady_state_concentrations_dict = {
                 specie: concentrations_dict[specie][-1] for
@@ -627,7 +639,7 @@ class Reactor():
                 y_dict,
                 reaction_rates_dict,
                 transformation_rates_dict
-                ) = self.run(guess, full_output=True)
+                ) = self.run(guess, full_output=True)  # type: ignore
 
             transformation_rates = np.array(
                 list(transformation_rates_dict.values())
@@ -636,22 +648,15 @@ class Reactor():
             below_threshold = np.all(
                 np.abs(transformation_rates) < threshold, axis=1
             )
-            if self.reactor_type == "CSTR":
-                volume = np.minimum(
-                    self.initial_volume + self.flow_rate*x_array, self.volume
-                )
-                if (np.any(below_threshold)) and volume[-1] == self.volume:
-                    # Find the time at which the steady state is reached
-                    x_steady_state = x_array[np.where(below_threshold)[0][0]]
-                    steady_state_reached = True
-            elif (np.any(below_threshold)):
+
+            if np.any(below_threshold):
                 # Find the time at which the steady state is reached
                 x_steady_state = x_array[np.where(below_threshold)[0][0]]
                 steady_state_reached = True
             if not steady_state_reached:
                 guess *= 10  # Increase time guess
 
-        if (not steady_state_reached):
+        if (not steady_state_reached):  # pragma: no cover
             raise ValueError(
                 """Steady state not reached within the maximum number of
                 iterations."""
@@ -708,7 +713,7 @@ class Reactor():
                 conversion at steady state
 
         Returns:
-            Tuple[float, Dict[str, float], Dict[str, float], Dict[Reaction, float], Dict[str, float]]:
+            Tuple[float, Dict[str, float], Dict[str, float], Dict[Reaction, float], Dict[str, float]]: # noqa
             In order : the time, the concentrations,
             the number of moles or molar flow, the reaction rates and
             the transformation rates at the desired conversion
@@ -753,7 +758,7 @@ class Reactor():
             y_dict,
             reaction_rates_dict,
             transformation_rates_dict
-            ) = self.run(x_steady_state, full_output=True)
+            ) = self.run(x_steady_state, full_output=True)  # type: ignore
 
         # Find the time at which the desired conversion is reached
         index_conversion_reached = np.where(

@@ -1,7 +1,7 @@
 How To Use
 ==========
 
-Create a reaction
+Create a Reaction
 -----------------
 
 To create a reaction, you need to create a new instance of the `Reaction` class. The constructor takes the following parameters:
@@ -29,7 +29,7 @@ Example:
 
     Because the symbol k is not in the species list, thus cannot be interpreted when calculating the reaction rate.
 
-Create a reactor
+Create a Reactor
 ----------------
 
 To create a reactor, you need to create a new instance of the `Reactor` class. The constructor takes the following parameters:
@@ -60,7 +60,7 @@ Example:
 
     The reactor is a CSTR with a volume of 10 L, containing species A, B and C with initial concentrations of 1, 2 and 0 mol/L, respectively. The reactor has two reactions happening, r1 and r2, and the flow rate is 1 L/h.
 
-Run the simulation
+Run a Simulation
 ------------------
 
 To run the simulation, you need to call the `run` method of the reactor object. This method takes the following parameters:
@@ -77,10 +77,10 @@ Example:
 
     The simulation will run for 10 seconds and the results will be plotted.
 
-Calculate steady-stade
-----------------------
+Find Steady-stade Parameters
+----------------------------
 
-To calculate the steady-state of a reactor, you need to call the `steady_state` method of the reactor object. This method takes the following parameters:
+To find the steady-state of a reactor, you need to call the `steady_state` method of the reactor object. This method takes the following parameters:
 
     - `guess`: The initial guess at which time the steady-state is reached. The default value is 10.
     - `threshold`: The transformation rates at which the steady-state is considered reached. The default value is 1e-3.
@@ -88,16 +88,16 @@ To calculate the steady-state of a reactor, you need to call the `steady_state` 
 
 Example:
 
-    Calculate the steady-state of the reactor::
+    Find the steady-state of the reactor::
     
         t_ss, conc_ss = r.find_steady_state()
 
     It will return the time at which the steady-state is reached as well as the concentrations at that time.
 
-Calculate the time to reached a certain conversion:
----------------------------------------------------
+Find the Time needed to reached a certain Conversion:
+-----------------------------------------------------
 
-To calculate the time to reach a certain conversion, you need to call the `time_to_conversion` method of the reactor object. This method takes the following parameters:
+To find the time to reach a certain conversion, you need to call the `time_to_conversion` method of the reactor object. This method takes the following parameters:
 
     - `specie`: The specie of interest.
     - `conversion_target`: The target conversion.
@@ -105,7 +105,7 @@ To calculate the time to reach a certain conversion, you need to call the `time_
 
 Example:
 
-    Calculate the time to reach a certain conversion::
+    Find the time to reach a certain conversion::
     
         t_conv = r.find_conversion('A', 0.5)[0]
 

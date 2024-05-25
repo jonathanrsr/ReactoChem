@@ -18,6 +18,8 @@ pip install git+https://github.com/jonathanrsr/ReactoChem
 
 ## Usage
 
+For a more complete documentation -> https://reactochem.readthedocs.io/en/latest/
+
 ### Importing the Classes
 
 ```python

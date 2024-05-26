@@ -85,7 +85,7 @@ Simulations
 
 The simulation employs the Radau method from the `scipy.integrate.solve_ivp` function to solve the differential equations. They can be stiff in some cases, as the volume's evolution can change brutally in the case of fed-batch and CSTR reactors.
 
-steady-state
+Steady-state
 ~~~~~~~~~~~~
 
 To find the steady-state of different reactors, the package looks for a point where the transformation rates of all species is under a certain threshold. For that, it runs the simulation for a certain amount of time, looks at the final transformation rates, and if the steady-stade isn't reached, try again with a longer time span.

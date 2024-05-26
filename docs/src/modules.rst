@@ -1,4 +1,4 @@
-ReactoChem modules
+ReactoChem Modules
 ==================
 
 .. toctree::

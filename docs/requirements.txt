@@ -4,4 +4,4 @@ scipy==1.13.1
 sphinx==5.0.2
 sphinx_rtd_theme==1.2.0
 sympy==1.12
-git+https://github.com/jonathanrsr/ReactoChem
+git+https://github.com/jonathanrsr/ReactoChem.git@{main}

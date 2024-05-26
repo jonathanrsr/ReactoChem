@@ -1,4 +1,3 @@
 sphinx
 sphinx_rtd_theme
-reactochem.reactions
-reactochem.reactors
+reactochem

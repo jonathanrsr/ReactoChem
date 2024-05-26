@@ -109,6 +109,6 @@ Example:
     
         t_conv = r.find_conversion('A', 0.5)[0]
 
-It will return the time at which the conversion is reached. The method also returns the concentrations, moles/molar flow, reaction rates and transformation rates at that time::
+    It will return the time at which the conversion is reached. The method also returns the concentrations, moles/molar flow, reaction rates and transformation rates at that time::
             
         t_conv, conc_conv, moles_conv, reaction_rates_conv, transformation_rates_conv = r.find_conversion('A', 0.5)

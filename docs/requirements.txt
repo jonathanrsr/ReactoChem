@@ -1,3 +1,6 @@
-sphinx
-sphinx_rtd_theme
-reactochem
+matplotlib==3.9.0
+numpy==1.26.4
+scipy==1.13.1
+sphinx==5.0.2
+sphinx_rtd_theme==1.2.0
+sympy==1.12

@@ -25,7 +25,7 @@ Example:
 
     This following reaction is wrong::
 
-        wrong_reaction = Reaction('example2', ['A', 'B', 'C'], [-1, -1, 1], 'k*B*A')
+        wrong_reaction = Reaction('Wrong reaction', ['A', 'B', 'C'], [-1, -1, 1], 'k*B*A')
 
     Because the symbol k is not in the species list, thus cannot be interpreted when calculating the reaction rate.
 

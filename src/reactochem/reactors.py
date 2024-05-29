@@ -6,6 +6,14 @@ from scipy.integrate import solve_ivp  # type: ignore
 
 
 class Reactor():
+    """A class to represent a chemical reactor. The Reactor object can be
+    used to simulate the behavior of a chemical reactor based on the type
+    of reactor and the reactions taking place in the reactor, based on the
+    initial conditions and parameters provided. The types of reactors
+    supported are Batch, Fed-batch, CSTR, and PFR.
+
+    """
+
     def __init__(
         self, reactor_type: str, volume: float, reactions: List[Reaction],
         initial_bulk_concentrations_dict: Dict[str, float] = {},

@@ -19,13 +19,13 @@ Example:
     
     Then create a reaction::
     
-        r = Reaction('example1', ['A', 'B', 'C'], [1, 1, -1], '0.2*A*B')
+        reaction1 = Reaction('Reaction 1', ['A', 'B', 'C'], [-1, -1, 1], '0.2*A*B')
     
     Be sure that the species and coefficients lists are in the same order.
 
     This following reaction is wrong::
 
-        r = Reaction('example2', ['A', 'B', 'C'], [1, 1, -1], 'k*B*A')
+        wrong_reaction = Reaction('Wrong reaction', ['A', 'B', 'C'], [-1, -1, 1], 'k*B*A')
 
     Because the symbol k is not in the species list, thus cannot be interpreted when calculating the reaction rate.
 
@@ -50,13 +50,13 @@ Example:
     
     Then create a reactor::
     
-        r = Reactor('Batch', 10, [r], {'A': 1, 'B': 2, 'C': 0})
+        batch1 = Reactor('Batch', 10, [r], {'A': 1, 'B': 2, 'C': 0})
     
     The reactor is a batch reactor with a volume of 10 L, containing species A, B and C with initial concentrations of 1, 2 and 0 mol/L, respectively.
 
     You can add multiple reactions to a reactor::
 
-        r = Reactor('CSTR', 10, [r1, r2], {'A': 1, 'B': 2, 'C': 0}, 0, 1, {'A': 1, 'B': 1, 'C': 0})
+        cstr1 = Reactor('CSTR', 10, [r1, r2], {'A': 1, 'B': 2, 'C': 0}, 0, 1, {'A': 1, 'B': 1, 'C': 0})
 
     The reactor is a CSTR with a volume of 10 L, containing species A, B and C with initial concentrations of 1, 2 and 0 mol/L, respectively. The reactor has two reactions happening, r1 and r2, and the flow rate is 1 L/h.
 

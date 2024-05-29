@@ -3,6 +3,11 @@ from typing import List, Dict
 
 
 class Reaction:
+    """A class to represent a chemical reaction. The Reaction object can
+    then be used within a Reactor object to simulate a chemical system.
+
+
+    """
     def __init__(
         self, name: str, species: List[str], coeffs: List[float],
         rate_law: str
